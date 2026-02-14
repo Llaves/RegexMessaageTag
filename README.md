@@ -23,11 +23,11 @@ Thunderbird extensions are written in Javascript, so the regex must use Javascri
 There are a variety of websites to help you write and test your regex. I like [regex101.com](https://regex101.com)
 
 ## Usage
-The regex is set in the options screen of the extension. Go to Tools->Manage Extensions. Then click the wrench icon next to Regex Message Tagger in the list of extensions. The options screen will appear and you can enter your regex. Once you save this, it is peristently saved to storage in the Thunderbird app. If you close the app and reopen, the last saved regex will be restored.
+The regex is set in the options screen of the extension. Go to Tools->Addons and Themes. Then click the wrench icon next to Regex Message Tagger in the list of extensions. The options screen will appear and you can enter your regex. Once you save this, it is peristently saved to storage in the Thunderbird app. If you close the app and reopen, the last saved regex will be restored.
 
 To tag your messages, either right-click->Regex Message Tagger->Tag Messages, or use the shortcut key ctrl-alt-T.
 To remove the tags, either right-click->Regex Message Tagger-> Delete SN Tags, or use the shortcut key ctrl-alt-U.
 
 If the Tags column is not visible in the messaages pane, right-click on any heading and tick the Tags entry. 
 
-If you don't like the default shortcut keys, you can change them. Go to Tools->Manage Extensions. Click on the gear (upper right corner), then select Manage Extension Shortcuts (last entry when this was written). A window will open that will let you set your own shortcuts.
+If you don't like the default shortcut keys, you can change them. Go to Tools->Addons and Themes. Click on the gear (upper right corner), then select Manage Extension Shortcuts (last entry when this was written). A window will open that will let you set your own shortcuts.
