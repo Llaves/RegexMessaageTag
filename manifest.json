@@ -3,15 +3,11 @@
   "name": "Regex Message Tagger",
   "version": "1.0",
   "permissions": [
-    "messagesModify",
     "messagesRead",
-	  "messagesUpdate",
-    "messagesTags",
-    "messagesTagsList",
+    "messagesTags", 
     "accountsRead",
     "menus",
-    "tabs",
-    "notifications",
+    "messagesTagsList",
     "storage"
   ],
   "background": {
