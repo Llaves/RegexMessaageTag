@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <style>
+    body { 
+      font-family: sans-serif; 
+      padding: 20px; 
+      line-height: 1.5; 
+      max-width: 100%; 
+    }
+    .field { margin-bottom: 20px; font-size: 1.2em;}
+    label { display: block; font-weight: bold; margin-bottom: 8px; font-size: 1.2em;}
+    input { 
+      width: 100%; 
+      padding: 8px; 
+      font-size: 1.2em; 
+      box-sizing: border-box; 
+    }
+    .hint { font-size: 1.2em; color: #666; margin-top: 5px; }
+    
+    .button-container {
+      display: flex;
+      justify-content: center; /* Centers the button horizontally */
+      margin-top: 30px;
+    }
+
+    #saveBtn { 
+      font-size: 1.2em; /* Larger text */
+      padding: 10px 30px; 
+      background-color: #0060df; 
+      color: white; 
+      border: none; 
+      border-radius: 4px; 
+      cursor: pointer;
+    }
+
+    #saveBtn:hover { background-color: #003eaa; }
+  </style>
+</head>
+<body>
+  <h1>Regex Message Tagger Settings</h1>
+  
+  <div class="field">
+    <label for="regexInput">Extraction Regex</label>
+    <input type="text" id="regexInput" placeholder="(\d+)$">
+  </div>
+
+  <div class="field">
+    <label>Keyboard Shortcuts</label>
+    <p class="hint">To change shortcuts, go to <strong>Add-ons Manager > Cog Icon > Manage Extension Shortcuts</strong>.</p>
+  </div>
+
+  <div class="button-container">
+    <button id="saveBtn">Save Settings</button>
+  </div>
+
+  <script src="options.js"></script>
+</body>
+</html>
