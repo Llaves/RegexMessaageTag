@@ -1,24 +1,36 @@
 {
   "manifest_version": 2,
-  "name": "Subject Number Sort",
-  "version": "2.1",
+  "name": "Regex Message Tagger",
+  "version": "1.0",
   "permissions": [
     "messagesModify",
     "messagesRead",
-	 "messagesUpdate",
+	  "messagesUpdate",
     "messagesTags",
     "messagesTagsList",
     "accountsRead",
     "menus",
-    "tabs"
+    "tabs",
+    "notifications",
+    "storage"
   ],
   "background": {
     "scripts": ["background.js"]
   },
   "applications": {
     "gecko": {
-      "id": "subject-number-sort-v2@example.com",
+      "id": "author.regex-message-tagger@addons.thunderbird.net",
       "strict_min_version": "115.0"
     }
+  },
+  "commands": {
+    "run-tagging": {
+      "suggested_key": { "default": "Ctrl+Alt+T" },
+      "description": "Tag Folder with Subject Numbers"
+    },
+    "run-purge": {
+      "suggested_key": { "default": "Ctrl+Alt+U" },
+      "description": "Delete all SN tags"
+    }
   }
-}
+}   

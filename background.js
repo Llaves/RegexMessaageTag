@@ -1,38 +1,65 @@
-// Background script for Subject Number Sort v2.7
+// Background script for Subject Number Sort v3.7
 console.log("Subject Number Sort add-on loaded");
 
+// 1. INITIALIZE MENUS
 messenger.menus.removeAll().then(() => {
   messenger.menus.create({
     id: "tag-with-subject-number",
     title: "Tag Folder (SN1, SN2...)",
     contexts: ["message_list", "folder_pane"]
   });
+
+  messenger.menus.create({
+    id: "delete-sn-tags",
+    title: "Delete SN tags",
+    contexts: ["message_list", "folder_pane"]
+  });
 });
 
-messenger.menus.onClicked.addListener(async (info, tab) => {
-  if (info.menuItemId !== "tag-with-subject-number") return;
+// 2. HELPERS
+async function refreshUI() {
+  const tabs = await messenger.tabs.query({ active: true, currentWindow: true });
+  for (const tab of tabs) {
+    if (tab.type === "mail") {
+      try {
+        const mailTab = await messenger.mailTabs.get(tab.id);
+        const { sortOrder, sortType } = mailTab;
+        const tempType = (sortType === "date") ? "subject" : "date";
 
+        // Reduced from 250ms/300ms to 100ms
+        await messenger.mailTabs.update(tab.id, { sortType: tempType });
+        await new Promise(r => setTimeout(r, 100)); 
+        await messenger.mailTabs.update(tab.id, { sortType, sortOrder });
+        console.log("TRACE: Fast UI Redraw complete.");
+      } catch (e) { console.warn("Refresh failed", e); }
+    }
+  }
+}
+
+async function purgeSNTags() {
+  console.log("TRACE: Purging SN tags...");
+  const allTags = await messenger.messages.tags.list();
+  for (const tag of allTags) {
+    if (tag.key.startsWith("sn")) {
+      try { await messenger.messages.tags.delete(tag.key); } catch (e) {}
+    }
+  }
+  // Reduced from 600ms to 200ms
+  await new Promise(r => setTimeout(r, 200));
+}
+
+// 3. MAIN LOGIC
+async function performTagging(info, tab) {
   try {
-    // 1. Resolve Folder
-    let folderId = info.displayedFolder?.id || info.selectedFolder?.id;
+    let folderId = info?.displayedFolder?.id || info?.selectedFolder?.id;
     if (!folderId && tab?.id) {
       const mailTab = await messenger.mailTabs.get(tab.id);
       folderId = mailTab.displayedFolder?.id;
     }
     if (!folderId) return;
 
-    // 2. PURGE: Delete all existing 'sn' tags for a clean start
-    console.log("Purging existing 'sn' tags...");
-    const allTags = await messenger.messages.tags.list();
-    for (const tag of allTags) {
-      if (tag.key.startsWith("sn")) {
-        try {
-          await messenger.messages.tags.delete(tag.key);
-        } catch (e) { /* ignore */ }
-      }
-    }
+    await purgeSNTags();
 
-    // 3. FETCH: Get all messages
     const messageList = await messenger.messages.list(folderId);
     let allMessages = [...messageList.messages];
     let pageId = messageList.id;
@@ -42,46 +69,71 @@ messenger.menus.onClicked.addListener(async (info, tab) => {
       pageId = nextPage.id;
     }
 
-    const uniqueNumberToTagMap = new Map(); 
-    let tagCounter = 1;
-
-    // 4. PROCESS: Map numbers to simple SN# labels
+    const numberToKey = new Map();
+    let counter = 1;
     for (const msg of allMessages) {
       const match = (msg.subject || "").match(/(\d+)$/);
-      if (match) {
-        const fullNumber = match[1];
-        
-        if (!uniqueNumberToTagMap.has(fullNumber)) {
-          const newKey = `sn${tagCounter}`;
-          uniqueNumberToTagMap.set(fullNumber, newKey);
-          
-          // STRICT LABELING: Use SN1, SN2, SN3...
-          await messenger.messages.tags.create(newKey, `SN${tagCounter}`, "#3366CC");
-          tagCounter++;
-        }
-
-        const targetKey = uniqueNumberToTagMap.get(fullNumber);
-
-        // 5. APPLY: Overwrite tags with the new simple group tag
-        try {
-          const updateProps = { tags: [targetKey] };
-
-          // Try both namespaces to bypass the "not a function" ESR bug
-          if (messenger.messages && typeof messenger.messages.update === "function") {
-            await messenger.messages.update(msg.id, updateProps);
-          } 
-          else if (browser.messages && typeof browser.messages.update === "function") {
-            await browser.messages.update(msg.id, updateProps);
-          }
-        } catch (err) {
-          console.error(`Update failed for msg ${msg.id}:`, err.message);
-        }
+      if (match && !numberToKey.has(match[1])) {
+        const key = `sn${counter}`;
+        await messenger.messages.tags.create(key, `SN${counter}`, "#3366CC");
+        numberToKey.set(match[1], key);
+        counter++;
       }
     }
 
-    console.log(`✓ Folder Tagging Complete. Used labels SN1 through SN${tagCounter - 1}`);
+    for (const msg of allMessages) {
+      const match = (msg.subject || "").match(/(\d+)$/);
+      let finalTags = (msg.tags || []).filter(t => !t.startsWith("sn"));
 
-  } catch (globalError) {
-    console.error("Critical Error:", globalError);
+      if (match) {
+        const targetKey = numberToKey.get(match[1]);
+        finalTags.push(targetKey);
+        await messenger.messages.update(msg.id, { tags: finalTags });
+      } else if ((msg.tags || []).some(t => t.startsWith("sn"))) {
+        await messenger.messages.update(msg.id, { tags: finalTags });
+      }
+    }
+
+    // Reduced final delay from 600ms/800ms to 200ms
+    setTimeout(async () => {
+      await refreshUI();
+      messenger.notifications.create({
+        type: "basic",
+        title: "Subject Number Sort",
+        message: `Tagging Complete! Created ${counter - 1} groups.`,
+        iconUrl: "icons/icon-48.png"
+      });
+    }, 200);
+
+  } catch (err) { console.error("TRACE: Error", err); }
+}
+
+// 4. LISTENERS
+messenger.menus.onClicked.addListener((info, tab) => {
+  if (info.menuItemId === "tag-with-subject-number") performTagging(info, tab);
+  if (info.menuItemId === "delete-sn-tags") {
+    purgeSNTags().then(() => {
+      // Execute refresh immediately after purge settle
+      refreshUI();
+      messenger.notifications.create({
+        type: "basic",
+        title: "Subject Number Sort",
+        message: "All SN tags removed.",
+        iconUrl: "icons/icon-48.png"
+      });
+    });
+  }
+});
+
+messenger.commands.onCommand.addListener(async (command) => {
+  const tabs = await messenger.tabs.query({ active: true, currentWindow: true });
+  const mailTab = tabs.find(t => t.type === "mail");
+  if (!mailTab) return;
+
+  if (command === "run-tagging") {
+    performTagging(null, mailTab);
+  } else if (command === "run-purge") {
+    await purgeSNTags();
+    await refreshUI();
   }
 });
